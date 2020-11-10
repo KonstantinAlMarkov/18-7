@@ -6,12 +6,34 @@ $fileList=scandir(UPLOAD_DIR);
 $fileList = array_filter($fileList, function ($file) {
     return !in_array($file, ['.', '..', '.gitkeep']);});
 //var_dump($fileList);
+$errors = [];
+$messages = [];
+
+//добавляем файлы
 if (!empty($_FILES)){
     foreach($_FILES as $file){
         $uploadedName=$file['tmp_name'][0];
         $fileDir=UPLOAD_DIR.'/'.$file['name'][0];
-        move_uploaded_file($uploadedName,$fileDir);
+        // Проверяем размер
+        if ($file['size'][0] > UPLOAD_MAX_SIZE) {
+            $errors[] = 'Недопостимый размер файла ' . $fileDir;
+            continue;
+        }
+        // Проверяем формат
+        if (!in_array($file['type'][0], ALLOWED_TYPES)) {
+            $errors[] = 'Недопустимый формат файла ' . $fileDir;
+            continue;
+        }   
+        // Пытаемся загрузить файл
+        if (!move_uploaded_file($uploadedName,$fileDir)) {
+            $errors[] = 'Ошибка загрузки файла ' . $fileName;
+            continue;
+        }          
     };
+
+    if (empty($errors)) {
+        $messages[] = 'Файлы были загружены';
+    }
     //скидываем значение
     unset($_FILES);
 }
@@ -21,10 +43,13 @@ if (!empty($_POST['name'])){
     $commentPath=COMMENT_DIR.'/'.$_POST['name'].'.txt';
     if (file_exists($filePath)) {
         unlink($filePath);
-    } 
+        $messages[] = 'Файл '.$filePath.' был удален';
+    } else { $errors[] = 'Файл не найден '.$filePath;}
     if (file_exists($commentPath)) {
         unlink($commentPath);
-    } 
+        $messages[] = 'Комментарии к файлу были удалены';
+    } else { $errors[] = 'Файл c комментариями не найден '.$commentPath;}
+
     //скидываем значение
     unset($_POST['name']);
 }
@@ -92,7 +117,26 @@ if (!empty($_POST['name'])){
                         </div>                      
                     </div>    
                 </form>
+                <hr>
             </div>            
+        </div>
+        <!-- Вывод сообщений об успехе/ошибке -->
+        <div class="row log">
+            <div class="col-12">
+                <div class= "row">
+                    <h2>Лог:</h2>            
+                </div>           
+                <div class= "row">
+                    <?php foreach ($errors as $error): ?>
+                        <div class="alert alert-danger"><?php echo $error; ?></div>
+                    <?php endforeach; ?>
+                </div>  
+                <div class= "row">
+                    <?php foreach ($messages as $message): ?>
+                        <div class="alert alert-success"><?php echo $message; ?></div>
+                    <?php endforeach; ?>            
+                </div>  
+            </div>
         </div>
         <div class="row footer">
             <div class="col-12"><hr>

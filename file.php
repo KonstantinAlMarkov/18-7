@@ -4,15 +4,26 @@ $fileName = $_GET['fileName'];
 $commentsFile = COMMENT_DIR.'/'.$fileName.'.txt';
 setlocale(LC_TIME, 'ru-Latn');
 
+$errors = [];
+$messages = [];
+
 //Если дали комментарий
 if (!empty($_POST['comment'])){
     //обработка комментария
     $comment = $_POST['comment'];
-    $symbToReplace = array("\r\n","\r","\n","\\r","\\n","\\r\\n");
-    $comment = str_replace($symbToReplace, "", $comment);
-    $comment =  date("D M j G:i:s T Y").":".$comment;
-    //запись комментария
-    file_put_contents($commentsFile,$comment."\n",FILE_APPEND);
+    //Валидация коммента
+    if($comment === '') {
+        $errors[] = 'Вы не ввели текст комментария';
+    } else {
+        $symbToReplace = array("\r\n","\r","\n","\\r","\\n","\\r\\n");
+        $comment = str_replace($symbToReplace, "", $comment);
+        $comment =  date("D M j G:i:s T Y").":".$comment;
+        //запись комментария
+        file_put_contents($commentsFile,$comment."\n",FILE_APPEND);
+        array_push($messages, 'Комментарий был добавлен');
+        var_dump($messages);
+    }
+
 }
 //Удаление комментария
 if (!empty($_POST['commentToDelete'])){
@@ -31,12 +42,13 @@ if (!empty($_POST['commentToDelete'])){
             //пишем в файл, ставим перенос строки после каждой записи в массиве и ставя дополнительный перенос после последней записи
             $newContent=implode("\n", $newFile);
             $newContent = $newContent."\n";
-            file_put_contents($commentsFile, $newContent);    
-        } else echo "Ключ не найден"."<br>";   
-        var_dump($newFile);    
-        echo "<br>";    
+            file_put_contents($commentsFile, $newContent);   
+            array_push($messages, 'Комментарий был удалён'); 
+        } else echo $errors[] = 'Комментарий не найден';
     }
-    else {echo "Файл не найден";}
+    else {
+        $errors[] = 'Файл не найден';
+    }
     unset($_POST['comment']);
 }
 
@@ -60,7 +72,7 @@ if (!empty($_POST['commentToDelete'])){
             <div class="col-4  headerCol">
                 <h1><a href="<?php echo URL; ?>">Галерея изображений</a></h1>
             </div>
-        </div>          
+        </div>   
         <div class="row fileListH">
             <div class="col-12">
                 <h2>Изображение:<?php echo $fileName ?></h2>
@@ -110,7 +122,30 @@ if (!empty($_POST['commentToDelete'])){
                             <button type="submit" class="btn btn-primary">Комментрировать</button>
                         </form>
                     </div>
-                <div>
+                <div> 
+            </div>
+        </div>
+        <!-- Вывод сообщений об успехе/ошибке -->
+        <div class="row log">
+            <div class="col-12">
+            <hr>
+                <div class= "row">
+                    <h2>Лог:</h2>            
+                </div>           
+                <div class= "row">
+                    <?php foreach ($errors as $error): ?>
+                        <div class="col-4">
+                            <div class="alert alert-danger"><?php echo $error; ?></div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>  
+                <div class= "row">
+                    <?php foreach ($messages as $message): ?>
+                        <div class="col-4">                            
+                            <div class="alert alert-success"><?php echo $message; ?></div>
+                        </div>                       
+                    <?php endforeach; ?>            
+                </div>                  
             </div>
         </div>
         <div class="row footer">
